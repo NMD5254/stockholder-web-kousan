@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>事業報告書閲覧サイト</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+    <div class="login-box">
+
+        <div class="company-name">
+            日本磁力選鉱株式会社
+        </div>
+
+        <h1>
+            事業報告書閲覧サイト
+        </h1>
+
+        <label for="stockNo">
+            株主番号
+        </label>
+
+        <input
+            id="stockNo"
+            type="text"
+            maxlength="4"
+            placeholder="株主番号を入力してください">
+
+        <label for="authCode">
+            認証コード
+        </label>
+
+        <input
+            id="authCode"
+            type="text"
+            maxlength="6"
+            placeholder="認証コードを入力してください">
+
+        <p class="guide-text">
+            ※通知文に記載された株主番号と認証コードを入力してください。
+        </p>
+
+        <button onclick="login()">
+            ログイン
+        </button>
+
+        <p id="message"></p>
+
+    </div>
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
