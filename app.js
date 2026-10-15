@@ -173,7 +173,7 @@ document.addEventListener(
 
 
         /*
-         * IME確定用Enterが
+         * IME確定用のEnterが
          * ログイン操作になることを防止する
          */
         document.addEventListener(
@@ -288,8 +288,15 @@ async function login() {
         /*
          * 日選興産用API
          */
+        const apiUrl =
+            "https:" +
+            "//func-stockholder-auth22-ebg8c2cqb3eqdthu" +
+            ".japanwest-01.azurewebsites.net" +
+            "/api/login-kousan";
+
+
         const response = await fetch(
-            "https://func-stockholder-auth22-ebg8c2cqb3eqdthu.japanwest-01.azurewebsites.net/api/login-kousan",
+            apiUrl,
             {
                 method: "POST",
                 headers: {
@@ -323,4 +330,26 @@ async function login() {
                 "error";
 
             loginButton.disabled =
-      
+                false;
+
+            loginButton.innerText =
+                "ログイン";
+        }
+
+    } catch (error) {
+
+        message.innerText =
+            "システムに接続できません。しばらくしてから再度お試しください。";
+
+        message.className =
+            "error";
+
+        loginButton.disabled =
+            false;
+
+        loginButton.innerText =
+            "ログイン";
+
+        console.error(error);
+    }
+}
