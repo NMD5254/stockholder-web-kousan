@@ -14,86 +14,237 @@ function toHalfWidth(value) {
 
 
 /*
+ * 株主番号を整形する
+ */
+function normalizeStockNo(value) {
+    return toHalfWidth(value)
+        .replace(/[^0-9]/g, "")
+        .slice(0, 4);
+}
+
+
+/*
+ * 認証コードを整形する
+ */
+function normalizeAuthCode(value) {
+    return toHalfWidth(value)
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 6);
+}
+
+
+/*
+ * IME入力状態
+ */
+let stockNoIsComposing = false;
+let authCodeIsComposing = false;
+
+
+/*
+ * IME確定直後のEnterによる
+ * ログイン処理を防止する
+ */
+let compositionJustEnded = false;
+
+
+/*
  * HTMLの読み込み完了後に入力制御を設定する
  */
 document.addEventListener(
     "DOMContentLoaded",
     function () {
+
         const stockNoInput =
             document.getElementById("stockNo");
 
         const authCodeInput =
             document.getElementById("authCode");
 
+
         /*
-         * 株主番号
-         * ・全角数字を半角数字へ変換
-         * ・数字以外を除去
-         * ・4桁までに制限
+         * 株主番号のIME入力開始
          */
         stockNoInput.addEventListener(
-            "input",
+            "compositionstart",
             function () {
-                this.value =
-                    toHalfWidth(this.value)
-                        .replace(/[^0-9]/g, "")
-                        .slice(0, 4);
+                stockNoIsComposing = true;
             }
         );
 
+
         /*
-         * 認証コード
-         * ・全角英数字を半角へ変換
-         * ・小文字を大文字へ変換
-         * ・英数字以外を除去
-         * ・6文字までに制限
+         * 株主番号のIME入力確定
+         */
+        stockNoInput.addEventListener(
+            "compositionend",
+            function () {
+                stockNoIsComposing = false;
+                compositionJustEnded = true;
+
+                this.value =
+                    normalizeStockNo(this.value);
+
+                setTimeout(
+                    function () {
+                        compositionJustEnded = false;
+                    },
+                    200
+                );
+            }
+        );
+
+
+        /*
+         * 株主番号の通常入力
+         *
+         * IME入力中は値を書き換えない
+         */
+        stockNoInput.addEventListener(
+            "input",
+            function (event) {
+
+                if (
+                    stockNoIsComposing ||
+                    event.isComposing
+                ) {
+                    return;
+                }
+
+                this.value =
+                    normalizeStockNo(this.value);
+            }
+        );
+
+
+        /*
+         * 認証コードのIME入力開始
+         */
+        authCodeInput.addEventListener(
+            "compositionstart",
+            function () {
+                authCodeIsComposing = true;
+            }
+        );
+
+
+        /*
+         * 認証コードのIME入力確定
+         */
+        authCodeInput.addEventListener(
+            "compositionend",
+            function () {
+                authCodeIsComposing = false;
+                compositionJustEnded = true;
+
+                this.value =
+                    normalizeAuthCode(this.value);
+
+                setTimeout(
+                    function () {
+                        compositionJustEnded = false;
+                    },
+                    200
+                );
+            }
+        );
+
+
+        /*
+         * 認証コードの通常入力
+         *
+         * IME入力中は値を書き換えない
          */
         authCodeInput.addEventListener(
             "input",
-            function () {
+            function (event) {
+
+                if (
+                    authCodeIsComposing ||
+                    event.isComposing
+                ) {
+                    return;
+                }
+
                 this.value =
-                    toHalfWidth(this.value)
-                        .toUpperCase()
-                        .replace(/[^A-Z0-9]/g, "")
-                        .slice(0, 6);
+                    normalizeAuthCode(this.value);
             }
+        );
+
+
+        /*
+         * IME確定用Enterが
+         * ログイン操作になることを防止する
+         */
+        document.addEventListener(
+            "keydown",
+            function (event) {
+
+                if (event.key !== "Enter") {
+                    return;
+                }
+
+                if (
+                    event.isComposing ||
+                    event.keyCode === 229 ||
+                    stockNoIsComposing ||
+                    authCodeIsComposing ||
+                    compositionJustEnded
+                ) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            },
+            true
         );
     }
 );
 
 
 /*
- * ログイン処理
+ * 日選興産用ログイン処理
  */
 async function login() {
 
     /*
-     * 送信直前にも入力値を整形する。
-     * 貼り付けやブラウザー差異への補助対策。
+     * IME入力中または変換直後は
+     * ログイン処理を実行しない
      */
-    const stockNo =
-        toHalfWidth(
-            document.getElementById("stockNo").value
-        )
-            .replace(/[^0-9]/g, "")
-            .slice(0, 4);
+    if (
+        stockNoIsComposing ||
+        authCodeIsComposing ||
+        compositionJustEnded
+    ) {
+        return;
+    }
 
-    const authCode =
-        toHalfWidth(
-            document.getElementById("authCode").value
-        )
-            .toUpperCase()
-            .replace(/[^A-Z0-9]/g, "")
-            .slice(0, 6);
+
+    const stockNoInput =
+        document.getElementById("stockNo");
+
+    const authCodeInput =
+        document.getElementById("authCode");
+
 
     /*
-     * 整形後の値を入力欄にも反映する
+     * 送信直前にも入力値を整形する
      */
-    document.getElementById("stockNo").value =
+    const stockNo =
+        normalizeStockNo(stockNoInput.value);
+
+    const authCode =
+        normalizeAuthCode(authCodeInput.value);
+
+
+    /*
+     * 整形した値を入力欄にも反映する
+     */
+    stockNoInput.value =
         stockNo;
 
-    document.getElementById("authCode").value =
+    authCodeInput.value =
         authCode;
+
 
     const message =
         document.getElementById("message");
@@ -101,20 +252,49 @@ async function login() {
     const loginButton =
         document.querySelector("button");
 
-    message.innerText = "認証中...";
-    message.className = "";
 
-    loginButton.disabled = true;
-    loginButton.innerText = "認証中...";
+    /*
+     * 桁数が不足している場合は送信しない
+     */
+    if (
+        stockNo.length !== 4 ||
+        authCode.length !== 6
+    ) {
+        message.innerText =
+            "株主番号は4桁、認証コードは6文字で入力してください。";
+
+        message.className =
+            "error";
+
+        return;
+    }
+
+
+    message.innerText =
+        "認証中...";
+
+    message.className =
+        "";
+
+    loginButton.disabled =
+        true;
+
+    loginButton.innerText =
+        "認証中...";
+
 
     try {
 
+        /*
+         * 日選興産用API
+         */
         const response = await fetch(
             "https://func-stockholder-auth22-ebg8c2cqb3eqdthu.japanwest-01.azurewebsites.net/api/login-kousan",
             {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type":
+                        "application/json"
                 },
                 body: JSON.stringify({
                     stockNo: stockNo,
@@ -123,8 +303,10 @@ async function login() {
             }
         );
 
+
         const result =
             await response.json();
+
 
         if (result.success) {
 
@@ -140,21 +322,5 @@ async function login() {
             message.className =
                 "error";
 
-            loginButton.disabled = false;
-            loginButton.innerText = "ログイン";
-        }
-
-    } catch (error) {
-
-        message.innerText =
-            "システムに接続できません。しばらくしてから再度お試しください。";
-
-        message.className =
-            "error";
-
-        loginButton.disabled = false;
-        loginButton.innerText = "ログイン";
-
-        console.error(error);
-    }
-}
+            loginButton.disabled =
+      
